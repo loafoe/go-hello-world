@@ -1,0 +1,18 @@
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: architecture/azure-pipeline-templates
+    ref: refs/heads/master
+
+trigger:
+  branches:
+    include: [ master ]
+
+steps:
+- template: semver.yml@templates
+- powershell: 'Write-Host "##vso[build.updatebuildnumber]$(GITVERSION_FullSemVer)"'
+- template: docker-build-push.yml@templates
+  parameters:
+    universalDocker: 'none'  
+- template: publish-docker-artifacts.yml@templates    
