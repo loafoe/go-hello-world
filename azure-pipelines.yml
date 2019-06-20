@@ -6,8 +6,10 @@ resources:
     ref: refs/heads/master
 
 trigger:
+  batch: true
   branches:
-    include: [ master ]
+    include:
+    - master
 
 steps:
 - template: docker-build-push.yml@templates
