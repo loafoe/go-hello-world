@@ -1,0 +1,23 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: go-hello-world
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: go-hello-world
+  template:
+    metadata:
+      labels:
+        app: go-hello-world
+    spec:
+      hostNetwork: false
+      containers:
+      - name: go-hello-world
+        image: docker.na1.hsdp.io/wellcentive/go-hello-world:latest
+        ports: []
+        resources:
+          limits: {}
+      imagePullSecrets:
+      - name: docker.na1.hsdp.io
