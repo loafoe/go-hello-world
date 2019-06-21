@@ -19,3 +19,17 @@ Simple web application in Go
 $ curl http://localhost:8080/foo/bar
 Hello, you've requested: /foo/bar
 ```
+
+# kubernetes deployment
+
+* Use the [deployment.yml](deployment.yml) example
+
+```
+$ kubectl apply -f deployment.yml
+```
+* Expose the deployment through a service called `hello-world`
+
+```
+$ kubectl expose deployment go-hello-world --type=NodePort --name=hello-world
+```
+

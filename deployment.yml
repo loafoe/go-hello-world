@@ -16,7 +16,8 @@ spec:
       containers:
       - name: go-hello-world
         image: docker.na1.hsdp.io/wellcentive/go-hello-world:latest
-        ports: []
+        ports:
+        - containerPort: 8080  
         resources:
           limits: {}
       imagePullSecrets:
