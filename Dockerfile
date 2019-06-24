@@ -13,7 +13,7 @@ COPY . .
 RUN go build .
 
 FROM alpine:latest
-RUN apk update && apk add ca-certificates && pkg add postgresql-client && rm -rf /var/cache/apk/*
+RUN apk update && apk add ca-certificates && apk add postgresql-client && rm -rf /var/cache/apk/*
 WORKDIR /app
 COPY --from=builder /go-hello-world/go-hello-world /app
 ENTRYPOINT ["/app/go-hello-world"]
