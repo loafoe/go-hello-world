@@ -13,3 +13,9 @@ trigger:
 
 steps:
 - template: docker-build-push.yml@templates
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
