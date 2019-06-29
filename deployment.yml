@@ -23,3 +23,19 @@ spec:
           limits: {}
       imagePullSecrets:
       - name: docker.na1.hsdp.io
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: go-hello-world
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: hello-world.terrakube.com
+    http:
+      paths:
+      - backend:
+          serviceName: go-hello-world
+          servicePort: 8080
