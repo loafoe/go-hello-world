@@ -24,18 +24,37 @@ spec:
       imagePullSecrets:
       - name: docker.na1.hsdp.io
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+  labels:
+    app: go-hello-world
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+  selector:
+    app: go-hello-world
+---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: go-hello-world
-  namespace: kube-system
+  namespace: default
   annotations:
-    kubernetes.io/ingress.class: traefik
+    kubernetes.io/ingress.class: nginx
+    ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
-  rules:
-  - host: hello-world.terrakube.com
+  tls:
+  - hosts:
+    - "*.qa.terrakube.com"
+    - "hello-world.qa.terrakube.com"
+    secretName: qa-wildcard
+  rules:  
+  - host: hello-world.qa.terrakube.com
     http:
       paths:
       - backend:
-          serviceName: go-hello-world
+          serviceName: hello-world
           servicePort: 8080
