@@ -12,6 +12,7 @@ trigger:
     - master
 
 steps:
+- template: sonarqube.yml@templates
 - template: docker-build-push.yml@templates
 - task: CopyFiles@2
   inputs:
