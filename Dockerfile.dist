@@ -1,0 +1,9 @@
+FROM alpine:latest 
+LABEL maintainer="Andy Lo-A-Foe <andy.lo-a-foe@philips.com>"
+
+RUN apk --no-cache add ca-certificates
+WORKDIR /app
+COPY ./build/go-hello-world /app
+
+EXPOSE 8080
+CMD ["/app/go-hello-world"]
