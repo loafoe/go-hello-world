@@ -13,6 +13,7 @@ trigger:
 
 steps:
 - template: sonarqube-cli.yml@templates
+- template: docker-build-push.yml@templates
 - script: |
     docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
     docker run --rm -v `pwd`:/src go-hello-world-builder:latest
