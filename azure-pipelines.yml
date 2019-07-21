@@ -11,25 +11,29 @@ trigger:
     include:
     - master
 
-steps:
-- template: sonarqube-cli.yml@templates
-- template: docker-build-push.yml@templates
-- script: |
-    docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
-    docker run --rm -v `pwd`:/src go-hello-world-builder:latest
-  displayName: Build and Test go-hello-world executable
-  workingDirectory: $(System.DefaultWorkingDirectory)
-- task: PublishCodeCoverageResults@1
-  inputs:
-    codeCoverageTool: Cobertura 
-    summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
-    reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
-- task: CopyFiles@2
-  inputs:
-    Contents: 'deployment.yml'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+jobs:
+- template: job-template/semver.yml@templates
+job: sonar
+  steps:
+  - template: sonarqube-cli.yml@templates
+job: docker-build-push
+  - template: docker-build-push.yml@templates
+  - script: |
+      docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
+      docker run --rm -v `pwd`:/src go-hello-world-builder:latest
+    displayName: Build and Test go-hello-world executable
+    workingDirectory: $(System.DefaultWorkingDirectory)
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura 
+      summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
+      reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+  - task: CopyFiles@2
+    inputs:
+      Contents: 'deployment.yml'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
