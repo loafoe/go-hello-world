@@ -17,6 +17,7 @@ jobs:
   steps:
   - template: sonarqube-cli.yml@templates
 - job: docker-build-push
+  steps:
   - template: docker-build-push.yml@templates
   - script: |
       docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
