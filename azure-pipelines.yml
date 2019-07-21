@@ -16,9 +16,11 @@ jobs:
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
-- job: docker-build-push
+- job: docker
   steps:
   - template: docker-build-push.yml@templates
+- job: tests
+  steps:
   - script: |
       docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
       docker run --rm -v `pwd`:/src go-hello-world-builder:latest
@@ -29,6 +31,8 @@ jobs:
       codeCoverageTool: Cobertura 
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+- job: artefacts
+  steps:
   - task: CopyFiles@2
     inputs:
       Contents: 'deployment.yml'
