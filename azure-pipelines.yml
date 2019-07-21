@@ -13,10 +13,10 @@ trigger:
 
 jobs:
 - template: job-template/semver.yml@templates
-job: sonar
+- job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
-job: docker-build-push
+- job: docker-build-push
   - template: docker-build-push.yml@templates
   - script: |
       docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
