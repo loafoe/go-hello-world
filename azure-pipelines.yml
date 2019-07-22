@@ -14,12 +14,18 @@ trigger:
 jobs:
 - template: job-templates/semver.yml@templates
 - job: sonar
+  dependsOn:
+  - semver
   steps:
   - template: sonarqube-cli.yml@templates
 - job: docker
+  dependsOn:
+  - semver
   steps:
   - template: docker-build-push.yml@templates
 - job: tests
+  dependsOn:
+  - docker
   steps:
   - script: |
       docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
@@ -32,6 +38,8 @@ jobs:
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
 - job: artefacts
+  dependsOn:
+  - tests
   steps:
   - task: CopyFiles@2
     inputs:
