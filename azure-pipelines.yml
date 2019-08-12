@@ -12,7 +12,7 @@ trigger:
     - master
 
 jobs:
-- template: steps-templates/semver.yml@templates
+- template: jobs-templates/semver.yml@templates
 - job: sonar
   dependsOn:
   - semver
