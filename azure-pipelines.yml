@@ -14,7 +14,7 @@ trigger:
     - feature/*  
 
 jobs:
-- template: jobs-templates/semver.yml@templates
+- template: job-templates/semver.yml@templates
 - job: sonar
   dependsOn:
   - semver
