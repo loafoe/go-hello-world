@@ -14,15 +14,10 @@ trigger:
     - feature/*  
 
 jobs:
-- template: job-templates/semver.yml@templates
 - job: sonar
-  dependsOn:
-  - semver
   steps:
   - template: sonarqube-cli.yml@templates
 - job: docker
-  dependsOn:
-  - semver
   steps:
   - template: docker-build-push.yml@templates
 - job: tests
