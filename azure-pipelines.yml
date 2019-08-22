@@ -14,6 +14,12 @@ trigger:
     - feature/*  
 
 jobs:
+- job: versioning
+  steps:
+  - task: GitVersion@4
+    displayName: 'GitVersion'
+    inputs:
+      updateAssemblyInfo: true
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
