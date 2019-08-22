@@ -16,10 +16,8 @@ trigger:
 jobs:
 - job: versioning
   steps:
-  - task: GitVersion@4
-    displayName: 'GitVersion'
-    inputs:
-      updateAssemblyInfo: true
+  - script: |
+      docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.2-linux-centos-7-netcoreapp2.2 /repo
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
