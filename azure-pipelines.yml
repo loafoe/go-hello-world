@@ -3,7 +3,7 @@ resources:
   - repository: templates
     type: git
     name: pinc/azure-pipeline-templates
-    ref: refs/heads/master
+    ref: refs/heads/develop
 
 trigger:
   batch: true
@@ -14,15 +14,7 @@ trigger:
     - feature/*  
 
 jobs:
-- job: versioning
-  steps:
-  - powershell: |
-      docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.2-linux-centos-7-netcoreapp2.2 /repo > $(Build.SourcesDirectory)/gitversion.json
-      $semver = Get-Content -Raw -Path $(Build.SourcesDirectory)/gitversion.json | ConvertFrom-Json
-      $f = $semver.FullSemVer
-      Write-Host "##vso[task.setvariable variable=GITVERSION_FullSemVer;]$f"
-      $s = $semver.SemVer
-      Write-Host "##vso[task.setvariable variable=GITVERSION_SemVer;]$s"
+- template: jobs-templates/semver.yml@templates    
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
