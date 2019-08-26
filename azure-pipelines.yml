@@ -20,9 +20,9 @@ jobs:
       docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.2-linux-centos-7-netcoreapp2.2 /repo > $(Build.SourcesDirectory)/gitversion.json
       $semver = Get-Content -Raw -Path $(Build.SourcesDirectory)/gitversion.json | ConvertFrom-Json
       $f = $semver.FullSemVer
-      "##vso[task.setvariable variable=GITVERSION_FullSemVer;]$f"
+      Write-Host "##vso[task.setvariable variable=GITVERSION_FullSemVer;]$f"
       $s = $semver.SemVer
-      "##vso[task.setvariable variable=GITVERSION_SemVer;]$s"
+      Write-Host "##vso[task.setvariable variable=GITVERSION_SemVer;]$s"
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
@@ -49,7 +49,9 @@ jobs:
   steps:
   - task: CopyFiles@2
     inputs:
-      Contents: 'deployment.yml'
+      Contents: |
+        deployment.yml
+        gitversion.json
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
   - task: PublishBuildArtifacts@1
     inputs:
