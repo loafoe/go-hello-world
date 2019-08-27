@@ -35,7 +35,7 @@ jobs:
       codeCoverageTool: Cobertura 
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
-- job: version tagging
+- job: tagging
   dependsOn: semver
   steps:
   - script: |
