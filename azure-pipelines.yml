@@ -35,6 +35,11 @@ jobs:
       codeCoverageTool: Cobertura 
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+- job: version tagging
+  dependsOn: semver
+  steps:
+  - script: |
+      echo version = $GITVERSION_FULLSEMVER
 - job: artefacts
   dependsOn:
   - tests
