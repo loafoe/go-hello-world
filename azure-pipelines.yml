@@ -36,7 +36,6 @@ jobs:
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
 - job: docker
   steps:
-  - template: docker-login.yml@templates
   - template: docker-build.yml@templates
   - template: docker-push.yml@templates
 - job: artefacts
