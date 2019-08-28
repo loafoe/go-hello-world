@@ -3,7 +3,7 @@ resources:
   - repository: templates
     type: git
     name: pinc/azure-pipeline-templates
-    ref: refs/heads/feature/upgrade-docker
+    ref: refs/heads/feature/develop
 
 trigger:
   batch: true
@@ -38,8 +38,6 @@ jobs:
   steps:
   - template: docker-login.yml@templates
   - template: docker-build.yml@templates
-    parameters:
-      ImageName: 'go-hello-world'
   - template: docker-push.yml@templates
 - job: artefacts
   dependsOn:
