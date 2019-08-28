@@ -17,12 +17,11 @@ trigger:
     - feature/*  
 
 jobs:
+- template: job-templates/semver.yml@templates
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
 - job: tests
-  dependsOn:
-  - docker
   steps:
   - script: |
       docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
