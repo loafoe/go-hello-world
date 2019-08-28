@@ -17,7 +17,6 @@ trigger:
     - feature/*  
 
 jobs:
-- template: job-templates/semver.yml@templates    
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
@@ -35,12 +34,6 @@ jobs:
       codeCoverageTool: Cobertura 
       summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
       reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
-- job: tagging
-  dependsOn: semver
-  steps:
-  - template: steps-templates/semver-env.yml@templates
-  - script: |
-      echo version = $GITVERSION_FULLSEMVER
 - job: docker
   steps:
   - template: docker-login.yml@templates
