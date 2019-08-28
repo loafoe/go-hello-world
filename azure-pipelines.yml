@@ -3,33 +3,59 @@ resources:
   - repository: templates
     type: git
     name: pinc/azure-pipeline-templates
-    ref: refs/heads/master
+    ref: refs/heads/develop
 
 trigger:
   batch: true
+  tags:
+    include:
+    - v*
   branches:
     include:
     - master
+    - develop
+    - feature/*  
 
-steps:
-- template: sonarqube-cli.yml@templates
-- template: docker-build-push.yml@templates
-- script: |
-    docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
-    docker run --rm -v `pwd`:/src go-hello-world-builder:latest
-  displayName: Build and Test go-hello-world executable
-  workingDirectory: $(System.DefaultWorkingDirectory)
-- task: PublishCodeCoverageResults@1
-  inputs:
-    codeCoverageTool: Cobertura 
-    summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
-    reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
-- task: CopyFiles@2
-  inputs:
-    Contents: 'deployment.yml'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+jobs:
+- template: job-templates/semver.yml@templates    
+- job: sonar
+  steps:
+  - template: sonarqube-cli.yml@templates
+- job: docker
+  steps:
+  - template: docker-build-push.yml@templates
+- job: tests
+  dependsOn:
+  - docker
+  steps:
+  - script: |
+      docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
+      docker run --rm -v `pwd`:/src go-hello-world-builder:latest
+    displayName: Build and Test go-hello-world executable
+    workingDirectory: $(System.DefaultWorkingDirectory)
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura 
+      summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
+      reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
+- job: tagging
+  dependsOn: semver
+  steps:
+  - template: steps-templates/semver-env.yml@templates
+  - script: |
+      echo version = $GITVERSION_FULLSEMVER
+- job: artefacts
+  dependsOn:
+  - tests
+  steps:
+  - task: CopyFiles@2
+    inputs:
+      Contents: |
+        deployment.yml
+        gitversion.json
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
