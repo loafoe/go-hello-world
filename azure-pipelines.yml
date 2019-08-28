@@ -3,7 +3,7 @@ resources:
   - repository: templates
     type: git
     name: pinc/azure-pipeline-templates
-    ref: refs/heads/develop
+    ref: refs/heads/feature/update-docker
 
 trigger:
   batch: true
@@ -21,9 +21,6 @@ jobs:
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
-- job: docker
-  steps:
-  - template: docker-build-push.yml@templates
 - job: tests
   dependsOn:
   - docker
@@ -44,6 +41,11 @@ jobs:
   - template: steps-templates/semver-env.yml@templates
   - script: |
       echo version = $GITVERSION_FULLSEMVER
+- job: docker
+  steps:
+  - template: docker-login.yml@templates
+  - template: docker-build.yml@templates
+  - template: docker-push.yml@templates
 - job: artefacts
   dependsOn:
   - tests
