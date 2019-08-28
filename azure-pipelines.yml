@@ -38,6 +38,8 @@ jobs:
   steps:
   - template: docker-login.yml@templates
   - template: docker-build.yml@templates
+    parameters:
+      ImageName: 'go-hello-world'
   - template: docker-push.yml@templates
 - job: artefacts
   dependsOn:
