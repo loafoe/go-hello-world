@@ -36,10 +36,7 @@ jobs:
 - job: docker
   dependsOn: semver
   steps:
-  - template: docker-build.yml@templates
-    parameters:
-      AddImageTag: 'whoop'
-  - template: docker-push.yml@templates
+  - template: docker-build-push.yml@templates
     parameters:
       AddImageTag: 'whoop'
 - job: artefacts
