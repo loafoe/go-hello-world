@@ -18,27 +18,14 @@ trigger:
 
 jobs:
 - template: job-templates/semver.yml@templates
+- template: test-template.yml  
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
-- job: tests
-  steps:
-  - script: |
-      docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
-      docker run --rm -v `pwd`:/src go-hello-world-builder:latest
-    displayName: Build and Test go-hello-world executable
-    workingDirectory: $(System.DefaultWorkingDirectory)
-  - task: PublishCodeCoverageResults@1
-    inputs:
-      codeCoverageTool: Cobertura 
-      summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
-      reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
 - job: docker
   dependsOn: semver
   steps:
   - template: docker-build-push.yml@templates
-    parameters:
-      AddImageTag: 'whoop'
 - job: artefacts
   dependsOn:
   - tests
