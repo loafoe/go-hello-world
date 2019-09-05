@@ -23,7 +23,9 @@ jobs:
   steps:
   - template: sonarqube-cli.yml@templates
 - job: docker
-  dependsOn: semver
+  dependsOn: 
+  - semver
+  - tests  
   steps:
   - template: docker-build-push.yml@templates
 - job: artefacts
@@ -34,10 +36,8 @@ jobs:
     inputs:
       Contents: |
         deployment.yml
-        gitversion.json
-      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/manifests'
   - task: PublishBuildArtifacts@1
     inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/manifests'
+      ArtifactName: 'manifests'
