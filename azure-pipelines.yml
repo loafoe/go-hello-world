@@ -23,7 +23,6 @@ jobs:
   - template: sonarqube-cli.yml@templates
 - job: docker
   dependsOn: 
-  - semver
   - tests  
   steps:
   - template: docker-build-push.yml@templates
