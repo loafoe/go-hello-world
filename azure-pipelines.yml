@@ -17,7 +17,6 @@ trigger:
     - feature/*  
 
 jobs:
-- template: job-templates/semver.yml@templates
 - template: test-template.yml  
 - job: sonar
   steps:
