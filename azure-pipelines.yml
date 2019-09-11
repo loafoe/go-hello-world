@@ -3,7 +3,7 @@ resources:
   - repository: templates
     type: git
     name: pinc/azure-pipeline-templates
-    ref: refs/heads/develop
+    ref: refs/heads/master
 
 trigger:
   batch: true
@@ -17,33 +17,15 @@ trigger:
     - feature/*  
 
 jobs:
-- template: job-templates/semver.yml@templates    
+- template: test-template.yml  
 - job: sonar
   steps:
   - template: sonarqube-cli.yml@templates
 - job: docker
+  dependsOn: 
+  - tests  
   steps:
   - template: docker-build-push.yml@templates
-- job: tests
-  dependsOn:
-  - docker
-  steps:
-  - script: |
-      docker build --tag 'go-hello-world-builder:latest' --file Dockerfile.build .
-      docker run --rm -v `pwd`:/src go-hello-world-builder:latest
-    displayName: Build and Test go-hello-world executable
-    workingDirectory: $(System.DefaultWorkingDirectory)
-  - task: PublishCodeCoverageResults@1
-    inputs:
-      codeCoverageTool: Cobertura 
-      summaryFileLocation: $(System.DefaultWorkingDirectory)/**/coverage.xml
-      reportDirectory: $(System.DefaultWorkingDirectory)/**/coverage
-- job: tagging
-  dependsOn: semver
-  steps:
-  - template: steps-templates/semver-env.yml@templates
-  - script: |
-      echo version = $GITVERSION_FULLSEMVER
 - job: artefacts
   dependsOn:
   - tests
@@ -52,10 +34,8 @@ jobs:
     inputs:
       Contents: |
         deployment.yml
-        gitversion.json
-      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/manifests'
   - task: PublishBuildArtifacts@1
     inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/manifests'
+      ArtifactName: 'manifests'
