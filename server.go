@@ -53,7 +53,7 @@ func connectTester(c echo.Context) error {
 }
 
 func rawConnect(host string, ports []string) []connectResult {
-	results := make([]connectResult, len(ports), len(ports))
+	results := make([]connectResult, len(ports))
 	for i, port := range ports {
 		timeout := time.Second
 		conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
