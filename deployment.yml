@@ -18,7 +18,7 @@ spec:
       hostNetwork: false
       containers:
       - name: go-hello-world
-        image: docker.na1.hsdp.io/wellcentive/go-hello-world:latest
+        image: docker.na1.hsdp.io/phm-services/go-hello-world:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080  
