@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"time"
 
@@ -24,6 +27,8 @@ func main() {
 	// Routes
 	e.GET("/", hello)
 	e.GET("/api/test/:host/:port", connectTester)
+	e.GET("/api/dump/:base64_path", fileDumper)
+	e.Any("/dump", requestDumper)
 
 	if port := os.Getenv("PORT"); port != "" {
 		listenString = ":" + port
@@ -41,6 +46,31 @@ type connectResult struct {
 // Handler
 func hello(c echo.Context) error {
 	return c.String(http.StatusOK, fmt.Sprintf("Hello! You've requested: %s", c.Request().RequestURI))
+}
+
+func requestDumper(c echo.Context) error {
+	dump, err := httputil.DumpRequest(c.Request(), true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return err
+	}
+	return c.String(http.StatusOK, string(dump))
+}
+
+func fileDumper(c echo.Context) error {
+	data, err := base64.StdEncoding.DecodeString(c.Param("base64_path"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return err
+	}
+	filename := string(data)
+	data, err = ioutil.ReadFile(filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return err
+	}
+	_, err = c.Response().Write(data)
+	return err
 }
 
 func connectTester(c echo.Context) error {
