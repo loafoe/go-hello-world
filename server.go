@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo-contrib/zipkintracing"
+	zipkinReporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinHttpReporter "github.com/openzipkin/zipkin-go/reporter/http"
 
 	"github.com/labstack/echo/v4"
@@ -27,7 +28,11 @@ func main() {
 	if err != nil {
 		e.Logger.Fatalf("error creating zipkin endpoint: %s", err.Error())
 	}
-	reporter := zipkinHttpReporter.NewReporter(os.Getenv("REPORTER_URL"))
+	reporterURL := os.Getenv("REPORTER_URL")
+	reporter := zipkinReporter.NewNoopReporter()
+	if reporterURL != "" {
+		reporter = zipkinHttpReporter.NewReporter(reporterURL)
+	}
 	traceTags := make(map[string]string)
 	traceTags["app_name"] = "go-hello-world"
 	tracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint), zipkin.WithTags(traceTags))
