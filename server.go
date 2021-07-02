@@ -10,8 +10,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/labstack/echo-contrib/zipkintracing"
+	zipkinHttpReporter "github.com/openzipkin/zipkin-go/reporter/http"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/openzipkin/zipkin-go"
 )
 
 func main() {
@@ -19,7 +23,17 @@ func main() {
 
 	// Echo instance
 	e := echo.New()
+	endpoint, err := zipkin.NewEndpoint("echo-service", "")
+	if err != nil {
+		e.Logger.Fatalf("error creating zipkin endpoint: %s", err.Error())
+	}
+	reporter := zipkinHttpReporter.NewReporter(os.Getenv("REPORTER_URL"))
+	traceTags := make(map[string]string)
+	traceTags["app_name"] = "go-hello-world"
+	tracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint), zipkin.WithTags(traceTags))
+	//client, _ := zipkinhttp.NewClient(tracer, zipkinhttp.ClientTrace(true))
 
+	e.Use(zipkintracing.TraceServer(tracer))
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -28,7 +42,7 @@ func main() {
 	e.GET("/", hello)
 	e.GET("/api/test/:host/:port", connectTester)
 	e.GET("/api/dump/:base64_path", fileDumper)
-	e.Any("/dump", requestDumper)
+	e.Any("/dump", requestDumper(tracer))
 
 	if port := os.Getenv("PORT"); port != "" {
 		listenString = ":" + port
@@ -48,13 +62,20 @@ func hello(c echo.Context) error {
 	return c.String(http.StatusOK, fmt.Sprintf("Hello! You've requested: %s", c.Request().RequestURI))
 }
 
-func requestDumper(c echo.Context) error {
-	dump, err := httputil.DumpRequest(c.Request(), true)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
-		return err
+func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		span := zipkintracing.StartChildSpan(c, "dump", tracer)
+		defer span.Finish()
+
+		traceID := span.Context().TraceID.String()
+		fmt.Printf("traceID=%s\n", traceID)
+		dump, err := httputil.DumpRequest(c.Request(), true)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, err)
+			return err
+		}
+		return c.String(http.StatusOK, string(dump))
 	}
-	return c.String(http.StatusOK, string(dump))
 }
 
 func fileDumper(c echo.Context) error {
