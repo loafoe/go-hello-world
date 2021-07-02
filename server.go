@@ -40,8 +40,8 @@ func main() {
 
 	// Routes
 	e.GET("/", hello)
-	e.GET("/api/test/:host/:port", connectTester)
-	e.GET("/api/dump/:base64_path", fileDumper)
+	e.GET("/api/test/:host/:port", connectTester(tracer))
+	e.GET("/api/dump/:base64_path", fileDumper(tracer))
 	e.Any("/dump", requestDumper(tracer))
 
 	if port := os.Getenv("PORT"); port != "" {
@@ -71,36 +71,43 @@ func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
 		fmt.Printf("traceID=%s\n", traceID)
 		dump, err := httputil.DumpRequest(c.Request(), true)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err)
-			return err
+			return c.JSON(http.StatusInternalServerError, err)
 		}
 		return c.String(http.StatusOK, string(dump))
 	}
 }
 
-func fileDumper(c echo.Context) error {
-	data, err := base64.StdEncoding.DecodeString(c.Param("base64_path"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+func fileDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		span := zipkintracing.StartChildSpan(c, "file_dumper", tracer)
+		defer span.Finish()
+		traceID := span.Context().TraceID.String()
+		fmt.Printf("traceID=%s\n", traceID)
+		data, err := base64.StdEncoding.DecodeString(c.Param("base64_path"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err)
+		}
+		filename := string(data)
+		data, err = ioutil.ReadFile(filename)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err)
+		}
+		_, err = c.Response().Write(data)
 		return err
 	}
-	filename := string(data)
-	data, err = ioutil.ReadFile(filename)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
-		return err
-	}
-	_, err = c.Response().Write(data)
-	return err
 }
 
-func connectTester(c echo.Context) error {
-	host := c.Param("host")
-	port := c.Param("port")
-
-	results := rawConnect(host, []string{port})
-
-	return c.JSON(http.StatusOK, results)
+func connectTester(tracer *zipkin.Tracer) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		host := c.Param("host")
+		port := c.Param("port")
+		span := zipkintracing.StartChildSpan(c, "raw_connect", tracer)
+		defer span.Finish()
+		traceID := span.Context().TraceID.String()
+		fmt.Printf("traceID=%s\n", traceID)
+		results := rawConnect(host, []string{port})
+		return c.JSON(http.StatusOK, results)
+	}
 }
 
 func rawConnect(host string, ports []string) []connectResult {
@@ -116,12 +123,12 @@ func rawConnect(host string, ports []string) []connectResult {
 			}
 		}
 		if conn != nil {
-			defer conn.Close()
 			results[i] = connectResult{
 				IP:     host,
 				Port:   port,
 				Status: fmt.Sprintf("Open"),
 			}
+			_ = conn.Close()
 		}
 	}
 	return results
