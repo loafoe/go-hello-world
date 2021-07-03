@@ -28,6 +28,10 @@ func main() {
 	if err != nil {
 		e.Logger.Fatalf("error creating zipkin endpoint: %s", err.Error())
 	}
+	instanceIndex := os.Getenv("CF_INSTANCE_INDEX")
+	if instanceIndex == "" {
+		instanceIndex = "unknown"
+	}
 	reporterURL := os.Getenv("REPORTER_URL")
 	reporter := zipkinReporter.NewNoopReporter()
 	if reporterURL != "" {
@@ -44,7 +48,7 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Routes
-	e.GET("/", hello)
+	e.GET("/", hello(instanceIndex))
 	e.GET("/api/test/:host/:port", connectTester(tracer))
 	e.GET("/api/dump/:base64_path", fileDumper(tracer))
 	e.Any("/dump", requestDumper(tracer))
@@ -63,8 +67,10 @@ type connectResult struct {
 }
 
 // Handler
-func hello(c echo.Context) error {
-	return c.String(http.StatusOK, fmt.Sprintf("Hello! You've requested: %s", c.Request().RequestURI))
+func hello(instanceIndex string) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.String(http.StatusOK, fmt.Sprintf("Hello from instance \"%s\"! You've requested: %s\n", instanceIndex, c.Request().RequestURI))
+	}
 }
 
 func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
