@@ -16,4 +16,6 @@ FROM alpine:latest
 RUN apk update && apk add ca-certificates && apk add postgresql-client && rm -rf /var/cache/apk/*
 WORKDIR /app
 COPY --from=builder /go-hello-world/go-hello-world /app
+
+EXPOSE 8080
 ENTRYPOINT ["/app/go-hello-world"]
