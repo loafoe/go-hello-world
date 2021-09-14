@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo-contrib/zipkintracing"
@@ -77,6 +78,18 @@ func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		span := zipkintracing.StartChildSpan(c, "dump", tracer)
 		defer span.Finish()
+
+		pause := 0
+		if wait := c.QueryParam("wait"); wait != "" {
+			val, err := strconv.Atoi(wait)
+			if err == nil {
+				pause = val
+			}
+		}
+		// Artificial wait
+		if pause > 0 {
+			time.Sleep(time.Duration(pause) * time.Millisecond)
+		}
 
 		traceID := span.Context().TraceID.String()
 		fmt.Printf("traceID=%s\n", traceID)
