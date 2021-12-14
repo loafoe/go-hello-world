@@ -54,6 +54,12 @@ func main() {
 	e.GET("/api/dump/:base64_path", fileDumper(tracer))
 	e.Any("/dump", requestDumper(tracer))
 
+	// Nomad
+	if port := os.Getenv("NOMAD_PORT_http"); port != "" {
+		listenString = ":" + port
+	}
+
+	// CF
 	if port := os.Getenv("PORT"); port != "" {
 		listenString = ":" + port
 	}
