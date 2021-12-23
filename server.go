@@ -64,7 +64,7 @@ func main() {
 	e.Use(prom.HandlerFunc)
 	prom.SetMetricsPath(ps)
 
-	go func() { ps.Logger.Fatal(ps.Start(":9001")) }()
+	go func() { ps.Logger.Fatal(ps.Start(":9100")) }()
 
 	// CF
 	if port := os.Getenv("PORT"); port != "" {
