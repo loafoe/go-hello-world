@@ -15,6 +15,7 @@ import (
 	zipkinReporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinHttpReporter "github.com/openzipkin/zipkin-go/reporter/http"
 
+	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/openzipkin/zipkin-go"
@@ -54,10 +55,16 @@ func main() {
 	e.GET("/api/dump/:base64_path", fileDumper(tracer))
 	e.Any("/dump", requestDumper(tracer))
 
-	// Nomad
-	if port := os.Getenv("NOMAD_PORT_http"); port != "" {
-		listenString = ":" + port
-	}
+	// Metrics
+	ps := echo.New()
+	ps.HideBanner = true
+	prom := prometheus.NewPrometheus("echo", nil)
+
+	// Scrape metrics from main server
+	e.Use(prom.HandlerFunc)
+	prom.SetMetricsPath(ps)
+
+	go func() { ps.Logger.Fatal(ps.Start(":9001")) }()
 
 	// CF
 	if port := os.Getenv("PORT"); port != "" {
