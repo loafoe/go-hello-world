@@ -40,7 +40,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: loafoe/go-hello-world:${{ steps.vars.outputs.tag }},docker.na1.hsdp.io/loafoe/go-hello-world:${{ steps.vars.outputs.tag }}
+          tags: loafoe/go-hello-world:${{ steps.vars.outputs.tag }}
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
