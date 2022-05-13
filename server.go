@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -11,49 +13,72 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/labstack/echo-contrib/zipkintracing"
-	zipkinReporter "github.com/openzipkin/zipkin-go/reporter"
-	zipkinHttpReporter "github.com/openzipkin/zipkin-go/reporter/http"
-
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/openzipkin/zipkin-go"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 )
+
+// initTracer creates a new trace provider instance and registers it as global trace provider.
+func initTracer(name, url string) func() {
+	// Create Zipkin Exporter and install it as a global tracer.
+	//
+	// For demoing purposes, always sample. In a production application, you should
+	// configure the sampler to a trace.ParentBased(trace.TraceIDRatioBased) set at the desired
+	// ratio.
+	exporter, err := zipkin.New(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	batcher := sdktrace.NewBatchSpanProcessor(exporter)
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSpanProcessor(batcher),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(name),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+
+	return func() {
+		_ = tp.Shutdown(context.Background())
+	}
+}
 
 func main() {
 	listenString := ":8080"
 
 	// Echo instance
 	e := echo.New()
-	endpoint, err := zipkin.NewEndpoint("echo-service", "")
-	if err != nil {
-		e.Logger.Fatalf("error creating zipkin endpoint: %s", err.Error())
-	}
+
 	instanceIndex := os.Getenv("CF_INSTANCE_INDEX")
 	if instanceIndex == "" {
 		instanceIndex = "unknown"
 	}
 	reporterURL := os.Getenv("REPORTER_URL")
-	reporter := zipkinReporter.NewNoopReporter()
-	if reporterURL != "" {
-		reporter = zipkinHttpReporter.NewReporter(reporterURL)
-	}
-	traceTags := make(map[string]string)
-	traceTags["app_name"] = "go-hello-world"
-	tracer, err := zipkin.NewTracer(reporter, zipkin.WithLocalEndpoint(endpoint), zipkin.WithTags(traceTags))
-	//client, _ := zipkinhttp.NewClient(tracer, zipkinhttp.ClientTrace(true))
 
-	e.Use(zipkintracing.TraceServer(tracer))
+	shutdown := initTracer("go-hello-world", reporterURL)
+	defer shutdown()
+
+	e.Use(otelecho.Middleware("go-hello-world"))
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	// Routes
+	e.Use()
 	e.GET("/", hello(instanceIndex))
-	e.GET("/api/test/:host/:port", connectTester(tracer))
-	e.GET("/api/dump/:base64_path", fileDumper(tracer))
-	e.Any("/dump", requestDumper(tracer))
+	e.GET("/api/test/:host/:port", connectTester())
+	e.GET("/api/dump/:base64_path", fileDumper())
+	e.Any("/dump", requestDumper())
 
 	// Metrics
 	ps := echo.New()
@@ -87,10 +112,13 @@ func hello(instanceIndex string) echo.HandlerFunc {
 	}
 }
 
-func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
+func requestDumper() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		span := zipkintracing.StartChildSpan(c, "dump", tracer)
-		defer span.Finish()
+		tr := otel.GetTracerProvider().Tracer("go-hello-world")
+		ctx := context.Background()
+		ctx, span := tr.Start(ctx, "dump", trace.WithSpanKind(trace.SpanKindServer))
+
+		defer span.End()
 
 		pause := 0
 		if wait := c.QueryParam("wait"); wait != "" {
@@ -104,7 +132,7 @@ func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
 			time.Sleep(time.Duration(pause) * time.Millisecond)
 		}
 
-		traceID := span.Context().TraceID.String()
+		traceID := span.SpanContext().TraceID().String()
 		fmt.Printf("traceID=%s\n", traceID)
 		dump, err := httputil.DumpRequest(c.Request(), true)
 		if err != nil {
@@ -114,11 +142,14 @@ func requestDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
 	}
 }
 
-func fileDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
+func fileDumper() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		span := zipkintracing.StartChildSpan(c, "file_dumper", tracer)
-		defer span.Finish()
-		traceID := span.Context().TraceID.String()
+		tr := otel.GetTracerProvider().Tracer("go-hello-world")
+		ctx := context.Background()
+		ctx, span := tr.Start(ctx, "file_dumper", trace.WithSpanKind(trace.SpanKindServer))
+
+		defer span.End()
+		traceID := span.SpanContext().TraceID().String()
 		fmt.Printf("traceID=%s\n", traceID)
 		data, err := base64.StdEncoding.DecodeString(c.Param("base64_path"))
 		if err != nil {
@@ -134,13 +165,15 @@ func fileDumper(tracer *zipkin.Tracer) echo.HandlerFunc {
 	}
 }
 
-func connectTester(tracer *zipkin.Tracer) echo.HandlerFunc {
+func connectTester() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		host := c.Param("host")
 		port := c.Param("port")
-		span := zipkintracing.StartChildSpan(c, "raw_connect", tracer)
-		defer span.Finish()
-		traceID := span.Context().TraceID.String()
+		tr := otel.GetTracerProvider().Tracer("go-hello-world")
+		ctx := context.Background()
+		ctx, span := tr.Start(ctx, "connect_tester", trace.WithSpanKind(trace.SpanKindServer))
+		defer span.End()
+		traceID := span.SpanContext().TraceID().String()
 		fmt.Printf("traceID=%s\n", traceID)
 		results := rawConnect(host, []string{port})
 		return c.JSON(http.StatusOK, results)
