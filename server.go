@@ -63,6 +63,9 @@ func main() {
 	if instanceIndex == "" {
 		instanceIndex = "unknown"
 	}
+	if color := os.Getenv("COLOR"); color != "" {
+                instanceIndex = color
+        }
 	reporterURL := os.Getenv("REPORTER_URL")
 
 	shutdown := initTracer("go-hello-world", reporterURL)
