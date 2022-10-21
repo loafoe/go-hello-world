@@ -80,7 +80,6 @@ func main() {
 	e.Use()
 	e.GET("/", hello(instanceIndex))
 	e.GET("/api/test/:host/:port", connectTester())
-	e.GET("/api/dump/:base64_path", fileDumper())
 	e.Any("/dump", requestDumper())
 
 	// Metrics
@@ -142,29 +141,6 @@ func requestDumper() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, err)
 		}
 		return c.String(http.StatusOK, string(dump))
-	}
-}
-
-func fileDumper() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		tr := otel.GetTracerProvider().Tracer("go-hello-world")
-		ctx := context.Background()
-		ctx, span := tr.Start(ctx, "file_dumper", trace.WithSpanKind(trace.SpanKindServer))
-
-		defer span.End()
-		traceID := span.SpanContext().TraceID().String()
-		fmt.Printf("traceID=%s\n", traceID)
-		data, err := base64.StdEncoding.DecodeString(c.Param("base64_path"))
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
-		}
-		filename := string(data)
-		data, err = ioutil.ReadFile(filename)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
-		}
-		_, err = c.Response().Write(data)
-		return err
 	}
 }
 
