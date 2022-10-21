@@ -1,5 +1,7 @@
 # go-hello-world
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/loafoe)](https://artifacthub.io/packages/search?repo=loafoe)
+
 Simple web application in Go
 
 # usage
