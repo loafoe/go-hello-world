@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -16,40 +15,8 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/zipkin"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 )
-
-// initTracer creates a new trace provider instance and registers it as global trace provider.
-func initTracer(name, url string) func() {
-	// Create Zipkin Exporter and install it as a global tracer.
-	//
-	// For demoing purposes, always sample. In a production application, you should
-	// configure the sampler to a trace.ParentBased(trace.TraceIDRatioBased) set at the desired
-	// ratio.
-	exporter, err := zipkin.New(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	batcher := sdktrace.NewBatchSpanProcessor(exporter)
-
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSpanProcessor(batcher),
-		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(name),
-		)),
-	)
-	otel.SetTracerProvider(tp)
-
-	return func() {
-		_ = tp.Shutdown(context.Background())
-	}
-}
 
 func main() {
 	listenString := ":8080"
@@ -62,12 +29,8 @@ func main() {
 		instanceIndex = "unknown"
 	}
 	if color := os.Getenv("COLOR"); color != "" {
-                instanceIndex = color
-        }
-	reporterURL := os.Getenv("REPORTER_URL")
-
-	shutdown := initTracer("go-hello-world", reporterURL)
-	defer shutdown()
+		instanceIndex = color
+	}
 
 	e.Use(otelecho.Middleware("go-hello-world"))
 	// Middleware
@@ -132,8 +95,6 @@ func requestDumper() echo.HandlerFunc {
 			time.Sleep(time.Duration(pause) * time.Millisecond)
 		}
 
-		traceID := span.SpanContext().TraceID().String()
-		fmt.Printf("traceID=%s\n", traceID)
 		dump, err := httputil.DumpRequest(c.Request(), true)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err)
@@ -150,8 +111,6 @@ func connectTester() echo.HandlerFunc {
 		ctx := context.Background()
 		ctx, span := tr.Start(ctx, "connect_tester", trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
-		traceID := span.SpanContext().TraceID().String()
-		fmt.Printf("traceID=%s\n", traceID)
 		results := rawConnect(host, []string{port})
 		return c.JSON(http.StatusOK, results)
 	}
