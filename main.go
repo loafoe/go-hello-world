@@ -1,12 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -14,8 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func main() {
@@ -42,6 +40,7 @@ func main() {
 	e.GET("/", hello(instanceIndex))
 	e.GET("/api/test/:host/:port", connectTester())
 	e.Any("/dump", requestDumper())
+	e.Any("/build", infoDumper())
 
 	// Metrics
 	ps := echo.New()
@@ -57,6 +56,11 @@ func main() {
 	// CF
 	if port := os.Getenv("PORT"); port != "" {
 		listenString = ":" + port
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		fmt.Printf("build info: %s\n", info.String())
 	}
 
 	e.Logger.Fatal(e.Start(listenString))
@@ -75,14 +79,20 @@ func hello(instanceIndex string) echo.HandlerFunc {
 	}
 }
 
+func infoDumper() echo.HandlerFunc {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return func(c echo.Context) error {
+			return c.String(http.StatusInternalServerError, "build info not available")
+		}
+	}
+	return func(c echo.Context) error {
+		return c.String(http.StatusOK, info.String())
+	}
+}
+
 func requestDumper() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		tr := otel.GetTracerProvider().Tracer("go-hello-world")
-		ctx := context.Background()
-		ctx, span := tr.Start(ctx, "dump", trace.WithSpanKind(trace.SpanKindServer))
-
-		defer span.End()
-
 		pause := 0
 		if wait := c.QueryParam("wait"); wait != "" {
 			val, err := strconv.Atoi(wait)
@@ -107,10 +117,6 @@ func connectTester() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		host := c.Param("host")
 		port := c.Param("port")
-		tr := otel.GetTracerProvider().Tracer("go-hello-world")
-		ctx := context.Background()
-		ctx, span := tr.Start(ctx, "connect_tester", trace.WithSpanKind(trace.SpanKindServer))
-		defer span.End()
 		results := rawConnect(host, []string{port})
 		return c.JSON(http.StatusOK, results)
 	}
