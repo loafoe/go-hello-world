@@ -1,4 +1,4 @@
-FROM golang:1.19.3-alpine3.16 as builder
+FROM golang:1.19.4-alpine3.16 as builder
 LABEL maintainer="andy.lo-a-foe@philips.com"
 RUN apk add --no-cache git openssh gcc musl-dev
 WORKDIR /go-hello-world
