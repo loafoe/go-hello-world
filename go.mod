@@ -1,6 +1,6 @@
 module github.com/philips-software/go-hello-world
 
-go 1.19
+go 1.20
 
 require (
 	github.com/labstack/echo-contrib v0.13.0
