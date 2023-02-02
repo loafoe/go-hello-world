@@ -3,7 +3,7 @@ module github.com/philips-software/go-hello-world
 go 1.20
 
 require (
-	github.com/labstack/echo-contrib v0.13.0
+	github.com/labstack/echo-contrib v0.13.1
 	github.com/labstack/echo/v4 v4.10.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.38.0
 )
