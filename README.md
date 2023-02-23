@@ -15,7 +15,7 @@ Simple web application in Go
 |----------|-----------------------------------------|
 | PORT     | Listens to PORT instead of default 8080 |
 | COLOR    | Assign color to the deployment.         |
-| OTLP_ADDRESS | The address to send (grPC) otel traces to |
+| OTLP_ADDRESS | The address to send (gRPC) otel traces to |
 
 ## output
 
