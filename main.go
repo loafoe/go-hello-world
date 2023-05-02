@@ -11,6 +11,10 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
+	"go.opentelemetry.io/otel/codes"
+
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -116,10 +120,10 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Routes
-	e.GET("/", hello(ctx, tracer, instanceIndex))
-	e.GET("/api/test/:host/:port", connectTester())
-	e.Any("/dump", requestDumper(ctx, tracer))
-	e.Any("/build", infoDumper(ctx, tracer))
+	e.GET("/", hello(tracer, instanceIndex))
+	e.GET("/api/test/:host/:port", connectTester(tracer))
+	e.Any("/dump", requestDumper(tracer))
+	e.Any("/build", infoDumper(tracer))
 
 	// Metrics
 	ps := echo.New()
@@ -152,31 +156,34 @@ type connectResult struct {
 }
 
 // Handler
-func hello(ctx context.Context, tracer trace.Tracer, instanceIndex string) echo.HandlerFunc {
+func hello(tracer trace.Tracer, instanceIndex string) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "hello")
 		defer span.End()
 		return c.String(http.StatusOK, fmt.Sprintf("Hello from instance \"%s\"! You've requested: %s\n", instanceIndex, c.Request().RequestURI))
 	}
 }
 
-func infoDumper(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
+func infoDumper(tracer trace.Tracer) echo.HandlerFunc {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		return func(c echo.Context) error {
+			ctx := c.Request().Context()
 			_, span := tracer.Start(ctx, "info-dumper")
 			defer span.End()
 			return c.String(http.StatusInternalServerError, "build info not available")
 		}
 	}
 	return func(c echo.Context) error {
+		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "info-dumper")
 		defer span.End()
 		return c.String(http.StatusOK, info.String())
 	}
 }
 
-func requestDumper(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
+func requestDumper(tracer trace.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "request-dumper")
@@ -202,14 +209,19 @@ func requestDumper(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
 	}
 }
 
-func connectTester() echo.HandlerFunc {
+func connectTester(tracer trace.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		span := trace.SpanFromContext(ctx)
+		_, span := tracer.Start(ctx, "connect-tester")
 		defer span.End()
 		host := c.Param("host")
 		port := c.Param("port")
 		results := rawConnect(host, []string{port})
+		span.SetStatus(codes.Ok, "got connect test")
+		if len(results) > 0 {
+			span.SetAttributes(attribute.KeyValue{Key: "target", Value: attribute.StringValue(fmt.Sprintf("%s:%s", host, port))},
+				attribute.KeyValue{Key: "result", Value: attribute.StringValue(results[0].Status)})
+		}
 		return c.JSON(http.StatusOK, results)
 	}
 }
