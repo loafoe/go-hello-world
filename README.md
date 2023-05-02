@@ -2,11 +2,11 @@
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/loafoe)](https://artifacthub.io/packages/search?repo=loafoe)
 
-Simple web application in Go
+Simple web application in Go,
 
 ## usage
 
-* Build and push a Docker image to a registry
+* Build and push to a registry
 * Deploy it to any container orchestration platform (Kubernetes, Cloud foundry, etc)
 
 ## environment
