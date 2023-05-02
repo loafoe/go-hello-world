@@ -107,7 +107,7 @@ func main() {
 	if color := os.Getenv("COLOR"); color != "" {
 		instanceIndex = color
 	}
-	tracer := otel.Tracer(fmt.Sprintf("go-hell-world-%s", instanceIndex))
+	tracer := otel.Tracer(fmt.Sprintf("go-hello-world-%s", instanceIndex))
 	ctx = context.Background()
 
 	e.Use(otelecho.Middleware("go-hello-world"))
@@ -117,7 +117,7 @@ func main() {
 
 	// Routes
 	e.GET("/", hello(ctx, tracer, instanceIndex))
-	e.GET("/api/test/:host/:port", connectTester(ctx, tracer))
+	e.GET("/api/test/:host/:port", connectTester())
 	e.Any("/dump", requestDumper(ctx, tracer))
 	e.Any("/build", infoDumper(ctx, tracer))
 
@@ -178,6 +178,7 @@ func infoDumper(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
 
 func requestDumper(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "request-dumper")
 		defer span.End()
 
@@ -201,9 +202,10 @@ func requestDumper(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
 	}
 }
 
-func connectTester(ctx context.Context, tracer trace.Tracer) echo.HandlerFunc {
+func connectTester() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, span := tracer.Start(ctx, "connect-tester")
+		ctx := c.Request().Context()
+		span := trace.SpanFromContext(ctx)
 		defer span.End()
 		host := c.Param("host")
 		port := c.Param("port")
