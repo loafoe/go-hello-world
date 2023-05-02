@@ -1,4 +1,4 @@
-module github.com/philips-software/go-hello-world
+module github.com/loafoe/go-hello-world
 
 go 1.20
 
