@@ -3,7 +3,7 @@ module github.com/loafoe/go-hello-world
 go 1.20
 
 require (
-	github.com/labstack/echo-contrib v0.14.1
+	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/samber/slog-echo v0.1.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.42.0
