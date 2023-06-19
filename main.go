@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	"golang.org/x/exp/slog"
+
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/otel/codes"
@@ -22,6 +24,7 @@ import (
 	"github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	slogecho "github.com/samber/slog-echo"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -116,14 +119,20 @@ func main() {
 
 	e.Use(otelecho.Middleware("go-hello-world"))
 	// Middleware
-	e.Use(middleware.Logger())
+
+	// Logging
+	// Create a slog logger, which:
+	//   - Logs to stdout.
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	e.Use(slogecho.New(logger))
+
 	e.Use(middleware.Recover())
 
 	// Routes
-	e.GET("/", hello(tracer, instanceIndex))
-	e.GET("/api/test/:host/:port", connectTester(tracer))
-	e.Any("/dump", requestDumper(tracer))
-	e.Any("/build", infoDumper(tracer))
+	e.GET("/", hello(logger, tracer, instanceIndex))
+	e.GET("/api/test/:host/:port", connectTester(logger, tracer))
+	e.Any("/dump", requestDumper(logger, tracer))
+	e.Any("/build", infoDumper(logger, tracer))
 
 	// Metrics
 	ps := echo.New()
@@ -156,16 +165,18 @@ type connectResult struct {
 }
 
 // Handler
-func hello(tracer trace.Tracer, instanceIndex string) echo.HandlerFunc {
+func hello(logger *slog.Logger, tracer trace.Tracer, instanceIndex string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "hello")
+		msg := fmt.Sprintf("Hello from instance \"%s\"! You've requested: %s\n", instanceIndex, c.Request().RequestURI)
 		defer span.End()
-		return c.String(http.StatusOK, fmt.Sprintf("Hello from instance \"%s\"! You've requested: %s\n", instanceIndex, c.Request().RequestURI))
+		logger.Info(msg, "trace_id", span.SpanContext().TraceID(), "span_id", span.SpanContext().SpanID())
+		return c.String(http.StatusOK, msg)
 	}
 }
 
-func infoDumper(tracer trace.Tracer) echo.HandlerFunc {
+func infoDumper(logger *slog.Logger, tracer trace.Tracer) echo.HandlerFunc {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		return func(c echo.Context) error {
@@ -179,11 +190,13 @@ func infoDumper(tracer trace.Tracer) echo.HandlerFunc {
 		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "info-dumper")
 		defer span.End()
+		logger.Info(info.String(), "trace_id", span.SpanContext().TraceID(), "span_id", span.SpanContext().SpanID())
+
 		return c.String(http.StatusOK, info.String())
 	}
 }
 
-func requestDumper(tracer trace.Tracer) echo.HandlerFunc {
+func requestDumper(logger *slog.Logger, tracer trace.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "request-dumper")
@@ -205,11 +218,12 @@ func requestDumper(tracer trace.Tracer) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err)
 		}
+		logger.Info(string(dump), "trace_id", span.SpanContext().TraceID(), "span_id", span.SpanContext().SpanID())
 		return c.String(http.StatusOK, string(dump))
 	}
 }
 
-func connectTester(tracer trace.Tracer) echo.HandlerFunc {
+func connectTester(logger *slog.Logger, tracer trace.Tracer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		_, span := tracer.Start(ctx, "connect-tester")
@@ -221,6 +235,7 @@ func connectTester(tracer trace.Tracer) echo.HandlerFunc {
 		if len(results) > 0 {
 			span.SetAttributes(attribute.KeyValue{Key: "target", Value: attribute.StringValue(fmt.Sprintf("%s:%s", host, port))},
 				attribute.KeyValue{Key: "result", Value: attribute.StringValue(results[0].Status)})
+			logger.Info("connection tested", "status", results[0].Status, "trace_id", span.SpanContext().TraceID(), "span_id", span.SpanContext().SpanID())
 		}
 		return c.JSON(http.StatusOK, results)
 	}
