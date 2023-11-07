@@ -71,9 +71,9 @@ github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyC
 github.com/valyala/fasttemplate v1.2.1/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
 github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
-go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.42.0 h1:sYefIhrd/A3fO8rmr0vy2tgCLoR8CsbMqwbcUa70x00=
-go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.42.0/go.mod h1:5Ll2ndRzg9UNUrj1n+v4ZCcrD/SYy7BnVrlCQXECowA=
-go.opentelemetry.io/contrib/propagators/b3 v1.17.0 h1:ImOVvHnku8jijXqkwCSyYKRDt2YrnGXD4BbhcpfbfJo=
+go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.44.0 h1:9n9+SOwuCyZ0L8SbQYjZ5H+GKojHN3Kl8pBLwBUQqhk=
+go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.44.0/go.mod h1:Wa9/q2K5L+ftWke2iekGNqVzwBWqyhI5OhtHKU7Qe04=
+go.opentelemetry.io/contrib/propagators/b3 v1.19.0 h1:ulz44cpm6V5oAeg5Aw9HyqGFMS6XM7untlMEhD7YzzA=
 go.opentelemetry.io/otel v1.19.0 h1:MuS/TNf4/j4IXsZuJegVzI1cwut7Qc00344rgH7p8bs=
 go.opentelemetry.io/otel v1.19.0/go.mod h1:i0QyjOq3UPoTzff0PJB2N66fb4S0+rSbSB15/oyH9fY=
 go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 h1:Mne5On7VWdx7omSrSSZvM4Kw7cS7NQkOOmLcgscI51U=
