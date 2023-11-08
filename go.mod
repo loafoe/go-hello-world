@@ -2,8 +2,6 @@ module github.com/loafoe/go-hello-world
 
 go 1.21
 
-toolchain go1.21.0
-
 require (
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.3
