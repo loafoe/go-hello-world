@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 
 	"go.opentelemetry.io/otel/attribute"
 
