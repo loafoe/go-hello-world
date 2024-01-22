@@ -61,8 +61,8 @@ github.com/prometheus/procfs v0.9.0 h1:wzCHvIvM5SxWqYvwgVL7yJY8Lz3PKn49KQtpgMYJf
 github.com/prometheus/procfs v0.9.0/go.mod h1:+pB4zwohETzFnmlpe6yd2lSc+0/46IYZRB/chUwxUZY=
 github.com/samber/lo v1.38.1 h1:j2XEAqXKb09Am4ebOg31SpvzUTTs6EN3VfgeLUhPdXM=
 github.com/samber/lo v1.38.1/go.mod h1:+m/ZKRl6ClXCE2Lgf3MsQlWfh4bn1bz6CXEOxnEXnEA=
-github.com/samber/slog-echo v1.8.0 h1:DQQRtAliSvQw+ScEdu5gv3jbHu9cCTzvHuTD8GDv7zI=
-github.com/samber/slog-echo v1.8.0/go.mod h1:0ab2AwcciQXNAXEcjkHwD9okOh9vEHEYn8xP97ocuhM=
+github.com/samber/slog-echo v1.12.1 h1:TgpA4luiqe2sa6SDsraM1hUcLAXF8ZofjXM0SzIJkJc=
+github.com/samber/slog-echo v1.12.1/go.mod h1:/f78pHjVxGrIlHlS5fzWiW+BxkWltQ+SWKk8LKMjAMQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
