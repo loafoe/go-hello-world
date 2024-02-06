@@ -6,6 +6,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: go-hello-world
     app.kubernetes.io/name: go-hello-world
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    kubernetes.io/tls-acme: true
 spec:
   ingressClassName: nginx
   tls:
