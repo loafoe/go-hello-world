@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hello-world-ingress
+  namespace: ${namespace}
   labels:
     app.kubernetes.io/instance: go-hello-world
     app.kubernetes.io/name: go-hello-world
