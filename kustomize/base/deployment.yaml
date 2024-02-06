@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-hello-world
+  labels:
+    app.kubernetes.io/name: go-hello-world
+    app.kubernetes.io/instance: go-hello-world
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: go-hello-world
+      app.kubernetes.io/name: go-hello-world
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: go-hello-world
+        app.kubernetes.io/name: go-hello-world
+    spec:
+      containers:
+      - name: go-hello-world
+        image: ghcr.io/loafoe/go-hello-world:latest
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: http-metrics
+          containerPort: 9100
