@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/instance: go-hello-world
     app.kubernetes.io/name: go-hello-world
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
     - ${ingress_host}
