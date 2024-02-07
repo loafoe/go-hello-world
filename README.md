@@ -17,6 +17,17 @@ Simple web application in Go, includes OpenTelemetry instrumentation.
 | COLOR    | Assign color to the deployment.         |
 | OTLP_ADDRESS | The address to send (gRPC) otel traces to |
 
+## kustomize
+
+Kustomize output should be run through `envsubst` with the following variables set
+
+| Variable | Description |
+|----------|-------------|
+| namespace| The namespace to creata all resources in |
+| ingress_host | The ingress hostname to use |
+| ingress_fqdn | The ingress FQDN. This is appended to the ingress hostname |
+
+
 ## output
 
 ```
