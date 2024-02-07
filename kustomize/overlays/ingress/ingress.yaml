@@ -13,10 +13,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - ${ingress_host}.${ingress_fqdn}
+    - ${ARGOCD_ENV_ingress_host}.${ARGOCD_ENV_ingress_fqdn}
     secretName: hello-world-tls
   rules:
-  - host: ${ingress_host}.${ingress_fqdn}
+  - host: ${ARGOCD_ENV_ingress_host}.${ARGOCD_ENV_ingress_fqdn}
     http:
       paths:
       - pathType: Prefix
