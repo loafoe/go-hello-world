@@ -13,10 +13,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - ${ingress_host}
+    - ${ingress_host}.${ingress_fqdn}
     secretName: hello-world-tls
   rules:
-  - host: ${ingress_host}
+  - host: ${ingress_host}.${ingress_fqdn}
     http:
       paths:
       - pathType: Prefix
