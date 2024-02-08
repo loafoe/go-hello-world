@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: go-hello-world
-        image: ghcr.io/loafoe/go-hello-world:latest
+        image: ghcr.io/loafoe/go-hello-world:v2.9.0
         ports:
         - name: http
           containerPort: 8080
