@@ -13,7 +13,7 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - ${ARGOCD_ENV_ingress_host}.${ARGOCD_ENV_ingress_fqdn}
+    - ${ARGOCD_ENV_ingress_host}.${ingress_fqdn}
     secretName: hello-world-tls
   rules:
   - host: ${ARGOCD_ENV_ingress_host}.${ARGOCD_ENV_ingress_fqdn}
