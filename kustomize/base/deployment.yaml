@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: go-hello-world
-  namespace: ${namespace}
   labels:
     app.kubernetes.io/name: go-hello-world
     app.kubernetes.io/instance: go-hello-world
