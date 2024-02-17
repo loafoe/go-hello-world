@@ -94,8 +94,8 @@ func main() {
 	//defer cancel()
 	ctx := context.Background()
 
-	shutdown, err := initProvider()
-	if err == nil {
+	shutdown, providerErr := initProvider()
+	if providerErr == nil {
 		defer func() {
 			if err := shutdown(ctx); err != nil {
 				fmt.Printf("failed to shutdown TracerProvider: %v\n", err)
@@ -144,6 +144,9 @@ func main() {
 	e.Use(prom.HandlerFunc)
 	prom.SetMetricsPath(ps)
 
+        if providerErr != nil {
+		logger.Error("Error setting up provider", "error", providerErr)
+        }
 	go func() { ps.Logger.Fatal(ps.Start(":9100")) }()
 
 	// CF
