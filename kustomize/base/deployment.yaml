@@ -21,6 +21,24 @@ spec:
       containers:
       - name: go-hello-world
         image: ghcr.io/loafoe/go-hello-world:v2.9.0
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 28000
+          runAsGroup: 28000
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
         ports:
         - name: http
           containerPort: 8080
