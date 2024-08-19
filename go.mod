@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/labstack/echo-contrib v0.17.1
 	github.com/labstack/echo/v4 v4.12.0
-	github.com/samber/slog-echo v1.14.4
+	github.com/samber/slog-echo v1.14.5
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.53.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.28.0
