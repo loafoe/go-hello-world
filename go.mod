@@ -1,6 +1,6 @@
 module github.com/loafoe/go-hello-world
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/labstack/echo-contrib v0.17.1
@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/automaxprocs v1.5.3
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.76.0
 )
 
 require (
