@@ -2,41 +2,44 @@ name: ci
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  main:
+  build:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          # We must fetch at least the immediate parents so that if this is
-          # a pull request then we can checkout the head.
-          fetch-depth: 2
-      - 
-        name: Set output
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-      - 
-        uses: actions/setup-go@v4
-        with:
-          go-version: '^1.21.0'
-          check-latest: true
+          go-version-file: go.mod
           cache-dependency-path: go.sum
-      - 
-        name: Log in to the Github Container registry
-        uses: docker/login-action@v2
+
+      - name: Log in to the Github Container registry
+        uses: docker/login-action@v3
+        if: github.event_name == 'push'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - 
-        name: KO setup
-        uses: ko-build/setup-ko@v0.6
+
+      - name: Setup Ko
+        uses: ko-build/setup-ko@v0.8
+
+      - name: Build and push (main branch)
+        if: github.event_name == 'push'
         env:
-          KO_DOCKER_REPO: ghcr.io/loafoe
-      - 
-        name: Build and push
-        run: ko build -B
+          KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}
+        run: ko build --tags latest -B
+
+      - name: Build only (pull request)
+        if: github.event_name == 'pull_request'
+        run: ko build --local -B
