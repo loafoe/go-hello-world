@@ -1,6 +1,6 @@
 module github.com/loafoe/go-hello-world
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/labstack/echo-contrib v0.50.1
