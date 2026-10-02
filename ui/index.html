@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>go-hello-world</title>
+<meta name="description" content="A tiny Go microservice that says hello, with OpenTelemetry instrumentation.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2300ADD8'/%3E%3Ctext x='32' y='44' font-family='Helvetica,Arial,sans-serif' font-size='36' font-weight='700' fill='%23fff' text-anchor='middle'%3Ehi%3C/text%3E%3C/svg%3E">
+<style>
+/* ------------------------------------------------------------------ *
+ * Everything below is inlined on purpose: this page ships inside the
+ * binary and must render with zero network round-trips.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --bg: #f4f6fb;
+  --bg-2: #e9edf7;
+  --blob-a: rgba(0, 173, 216, .55);
+  --blob-b: rgba(124, 77, 255, .45);
+  --blob-c: rgba(255, 106, 61, .35);
+  --surface: rgba(255, 255, 255, .72);
+  --surface-solid: #ffffff;
+  --border: rgba(16, 24, 40, .10);
+  --border-strong: rgba(16, 24, 40, .18);
+  --text: #101828;
+  --text-dim: #4a5568;
+  --text-faint: #78829a;
+  --accent: #0077b6;
+  --accent-2: #7c4dff;
+  --accent-contrast: #ffffff;
+  --ok: #0f9d58;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 12px 32px -12px rgba(16, 24, 40, .22);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] {
+    --bg: #080b14;
+    --bg-2: #0d1220;
+    --blob-a: rgba(0, 173, 216, .32);
+    --blob-b: rgba(124, 77, 255, .34);
+    --blob-c: rgba(255, 106, 61, .22);
+    --surface: rgba(255, 255, 255, .045);
+    --surface-solid: #10162a;
+    --border: rgba(255, 255, 255, .09);
+    --border-strong: rgba(255, 255, 255, .18);
+    --text: #e9edf7;
+    --text-dim: #a3adc4;
+    --text-faint: #737f99;
+    --accent: #35c8f0;
+    --accent-2: #a78bfa;
+    --accent-contrast: #06121a;
+    --ok: #34d399;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 20px 50px -20px rgba(0, 0, 0, .8);
+  }
+}
+
+html[data-theme="dark"] {
+  --bg: #080b14;
+  --bg-2: #0d1220;
+  --blob-a: rgba(0, 173, 216, .32);
+  --blob-b: rgba(124, 77, 255, .34);
+  --blob-c: rgba(255, 106, 61, .22);
+  --surface: rgba(255, 255, 255, .045);
+  --surface-solid: #10162a;
+  --border: rgba(255, 255, 255, .09);
+  --border-strong: rgba(255, 255, 255, .18);
+  --text: #e9edf7;
+  --text-dim: #a3adc4;
+  --text-faint: #737f99;
+  --accent: #35c8f0;
+  --accent-2: #a78bfa;
+  --accent-contrast: #06121a;
+  --ok: #34d399;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 20px 50px -20px rgba(0, 0, 0, .8);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Animated aurora backdrop ---------------------------------------- */
+.backdrop {
+  position: fixed;
+  inset: -20vmax;
+  z-index: -1;
+  background:
+    radial-gradient(38vmax 38vmax at 18% 12%, var(--blob-a), transparent 60%),
+    radial-gradient(42vmax 42vmax at 82% 8%, var(--blob-b), transparent 62%),
+    radial-gradient(34vmax 34vmax at 50% 92%, var(--blob-c), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+  filter: blur(12px) saturate(115%);
+  animation: drift 34s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2.5%, -2%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, 2.5%, 0) scale(1.02); }
+}
+
+.shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.75rem) clamp(1rem, 4vw, 2rem) 3rem;
+}
+
+/* Top bar ----------------------------------------------------------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  font-size: 1.05rem;
+  margin-right: auto;
+}
+
+.brand .mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font: 700 15px/1 var(--mono);
+  color: var(--accent-contrast);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: var(--shadow);
+}
+
+.brand .sub {
+  color: var(--text-faint);
+  font-weight: 450;
+  font-size: .82rem;
+  font-family: var(--mono);
+}
+
+/* Pills & chips ----------------------------------------------------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .28rem .7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font: 500 .78rem/1 var(--mono);
+  color: var(--text-dim);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent);
+  animation: pulse 2.2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, .55); }
+  70%  { box-shadow: 0 0 0 9px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: .4rem .85rem;
+  transition: transform .12s ease, border-color .2s ease, background .2s ease;
+  backdrop-filter: blur(8px);
+}
+
+button:hover { border-color: var(--accent); }
+button:active { transform: scale(.96); }
+
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.toggle { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; }
+.toggle svg { width: 16px; height: 16px; }
+
+/* Hero -------------------------------------------------------------- */
+.hero {
+  position: relative;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border-radius: calc(var(--radius) + 6px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+  background-size: 200% 100%;
+  animation: sweep 7s linear infinite;
+}
+
+@keyframes sweep {
+  from { background-position: 0 0; }
+  to   { background-position: 200% 0; }
+}
+
+.eyebrow {
+  margin: 0 0 .75rem;
+  font: 600 .72rem/1 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.85rem, 5.2vw, 3.1rem);
+  line-height: 1.1;
+  letter-spacing: -.035em;
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--text) 30%, var(--accent) 65%, var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero p {
+  margin: .9rem 0 0;
+  color: var(--text-dim);
+  max-width: 62ch;
+}
+
+.hero p code {
+  font-family: var(--mono);
+  font-size: .9em;
+  padding: .1rem .38rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+}
+
+.statusline {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: 1.4rem;
+  font-family: var(--mono);
+  font-size: .92rem;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-top-color: var(--accent);
+  animation: spin .85s linear infinite;
+  flex: none;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.statusline .verb { color: var(--text); font-weight: 600; }
+
+/* Stat grid --------------------------------------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
+  gap: .9rem;
+  margin-top: .9rem;
+}
+
+.card {
+  padding: 1rem 1.05rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+  min-width: 0;
+  transition: transform .18s ease, border-color .18s ease;
+}
+
+.card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+
+.card .label {
+  font: 600 .68rem/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.card .value {
+  margin-top: .5rem;
+  font: 600 1.02rem/1.35 var(--mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.card .value.small { font-size: .82rem; font-weight: 450; }
+
+/* Value change flash ------------------------------------------------ */
+@keyframes flash {
+  from { background-color: color-mix(in srgb, var(--accent) 22%, transparent); }
+  to   { background-color: transparent; }
+}
+.flash { animation: flash .9s ease-out; border-radius: 5px; }
+
+/* Section titles ---------------------------------------------------- */
+h2 {
+  margin: 2.25rem 0 .25rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Endpoints --------------------------------------------------------- */
+.routes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: .75rem;
+  margin-top: .9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.routes a {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  padding: .8rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  transition: transform .14s ease, border-color .18s ease;
+}
+
+.routes a:hover { transform: translateY(-2px); border-color: var(--accent); }
+
+.routes .method {
+  font: 700 .62rem/1 var(--mono);
+  letter-spacing: .08em;
+  color: var(--accent);
+}
+
+.routes .path { font: 600 .88rem/1.3 var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.routes .desc { font-size: .78rem; color: var(--text-faint); }
+
+/* Footer ------------------------------------------------------------ */
+footer {
+  margin-top: 2.75rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: .8rem;
+  color: var(--text-faint);
+}
+
+footer a { color: var(--text-dim); }
+footer code { font-family: var(--mono); }
+
+.offline { color: #d9534f; }
+@media (prefers-color-scheme: dark) { .offline { color: #ff6b6b; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<main class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark">hi</span>
+      <span>go-hello-world</span>
+      <span class="sub" id="brand-version">…</span>
+    </div>
+    <span class="pill"><span class="dot"></span><span id="status-pill">live</span></span>
+    <button class="toggle" id="theme-toggle" type="button" aria-label="Toggle colour scheme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path>
+      </svg>
+      <span id="theme-label">auto</span>
+    </button>
+  </div>
+
+  <section class="hero">
+    <p class="eyebrow">Instance <span id="hero-instance">…</span></p>
+    <h1 id="hero-title">Hello!</h1>
+    <p>
+      You asked for <code id="hero-path">/</code> &mdash; this response was served by a tiny Go
+      service, instrumented with OpenTelemetry and rendered entirely from a single self-contained
+      binary. No frameworks, no CDN, no build step.
+    </p>
+    <div class="statusline">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>currently <span class="verb" id="hero-verb">&hellip;</span> on instance
+        <strong id="hero-instance-2">…</strong></span>
+      <span>&middot; up <span id="hero-uptime">…</span></span>
+    </div>
+  </section>
+
+  <h2>Instance</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Version</div><div class="value" id="i-version">…</div></div>
+    <div class="card"><div class="label">Revision</div><div class="value" id="i-revision">…</div></div>
+    <div class="card"><div class="label">Platform</div><div class="value" id="i-platform">…</div></div>
+    <div class="card"><div class="label">Go</div><div class="value" id="i-go">…</div></div>
+    <div class="card"><div class="label">Hostname</div><div class="value small" id="i-host">…</div></div>
+    <div class="card"><div class="label">PID</div><div class="value" id="i-pid">…</div></div>
+  </div>
+
+  <h2>Runtime</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Uptime</div><div class="value" id="i-uptime">…</div></div>
+    <div class="card"><div class="label">Started</div><div class="value small" id="i-started">…</div></div>
+    <div class="card"><div class="label">Requests</div><div class="value" id="i-requests">…</div></div>
+    <div class="card"><div class="label">Goroutines</div><div class="value" id="i-goroutines">…</div></div>
+    <div class="card"><div class="label">Heap in use</div><div class="value" id="i-memory">…</div></div>
+    <div class="card"><div class="label">Tracing</div><div class="value" id="i-tracing">…</div></div>
+  </div>
+
+  <h2>Endpoints</h2>
+  <ul class="routes">
+    <li><a href="/"><span class="method">GET</span><span class="path">/</span><span class="desc">This page (or plain text)</span></a></li>
+    <li><a href="/api/info"><span class="method">GET</span><span class="path">/api/info</span><span class="desc">Live instance metadata as JSON</span></a></li>
+    <li><a href="/healthz"><span class="method">GET</span><span class="path">/healthz</span><span class="desc">Liveness &amp; readiness probe</span></a></li>
+    <li><a href="/dump"><span class="method">ANY</span><span class="path">/dump</span><span class="desc">Dump the incoming request</span></a></li>
+    <li><a href="/build"><span class="method">ANY</span><span class="path">/build</span><span class="desc">Go build information</span></a></li>
+    <li><a href="/api/test/example.com/443"><span class="method">GET</span><span class="path">/api/test/:host/:port</span><span class="desc">Test a TCP connection</span></a></li>
+  </ul>
+
+  <footer>
+    <span>Built with <code>net/http</code>, <code>embed</code> &amp; Echo.</span>
+    <span id="footer-note">Metrics are served on <code>:9100/metrics</code>.</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var POLL_MS = 2000;
+  var state = { info: null, since: Date.now(), failures: 0 };
+
+  /* --- theme ------------------------------------------------------ */
+  var THEMES = ["auto", "light", "dark"];
+  var stored = null;
+  try { stored = localStorage.getItem("ghw-theme"); } catch (e) { /* private mode */ }
+  var theme = THEMES.indexOf(stored) >= 0 ? stored : "auto";
+
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", theme);
+    var label = document.getElementById("theme-label");
+    if (label) label.textContent = theme;
+  }
+
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { localStorage.setItem("ghw-theme", theme); } catch (e) { /* ignore */ }
+    applyTheme();
+  });
+
+  applyTheme();
+
+  /* --- helpers ---------------------------------------------------- */
+  function $(id) { return document.getElementById(id); }
+
+  function set(id, value) {
+    var el = $(id);
+    if (!el) return;
+    var text = value == null || value === "" ? "—" : String(value);
+    if (el.textContent === text) return;
+    el.textContent = text;
+    el.classList.remove("flash");
+    void el.offsetWidth; /* restart the animation */
+    el.classList.add("flash");
+  }
+
+  function humanUptime(seconds) {
+    if (seconds == null) return "—";
+    seconds = Math.max(0, Math.floor(seconds));
+    var d = Math.floor(seconds / 86400);
+    var h = Math.floor((seconds % 86400) / 3600);
+    var m = Math.floor((seconds % 3600) / 60);
+    var s = seconds % 60;
+    if (d > 0) return d + "d " + h + "h " + m + "m";
+    if (h > 0) return h + "h " + m + "m " + s + "s";
+    if (m > 0) return m + "m " + s + "s";
+    return s + "s";
+  }
+
+  function bytes(n) {
+    if (n == null) return "—";
+    var units = ["B", "KiB", "MiB", "GiB"], i = 0;
+    while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+    return (i === 0 ? n : n.toFixed(1)) + " " + units[i];
+  }
+
+  function localTime(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+  }
+
+  /* --- render ----------------------------------------------------- */
+  function render(info) {
+    state.info = info;
+
+    var label = info.instance || "unknown";
+    set("hero-instance", label);
+    set("hero-instance-2", label);
+    set("hero-title", "Hello from “" + label + "”!");
+    set("hero-path", info.lastPath || window.location.pathname);
+    set("hero-verb", info.status || "Thinking");
+    set("brand-version", info.version || "");
+    document.title = "go-hello-world · " + label;
+
+    set("i-version", info.version);
+    set("i-revision", info.revision
+      ? info.revision.slice(0, 12) + (info.dirty ? " (dirty)" : "")
+      : null);
+    set("i-platform", info.platform);
+    set("i-go", info.goVersion);
+    set("i-host", info.hostname);
+    set("i-pid", info.pid);
+    set("i-started", localTime(info.startedAt));
+    set("i-requests", info.requestsServed);
+    set("i-goroutines", info.goroutines);
+    set("i-memory", bytes(info.memoryAllocBytes));
+    set("i-tracing", info.tracing ? "OTLP enabled" : "disabled");
+
+    if (info.otelAddress) {
+      $("footer-note").innerHTML = "Traces are exported to <code>" +
+        info.otelAddress.replace(/[<>&]/g, "") + "</code>. Metrics on <code>:9100/metrics</code>.";
+    }
+  }
+
+  function tickUptime() {
+    if (!state.info || state.info.uptimeSeconds == null) return;
+    var elapsed = (Date.now() - state.since) / 1000;
+    set("hero-uptime", humanUptime(state.info.uptimeSeconds + elapsed));
+    set("i-uptime", humanUptime(state.info.uptimeSeconds + elapsed));
+  }
+
+  function markOffline(online) {
+    var pill = $("status-pill");
+    pill.textContent = online ? "live" : "unreachable";
+    pill.classList.toggle("offline", !online);
+    if (!online) state.failures++;
+    else state.failures = 0;
+  }
+
+  /* --- poll ------------------------------------------------------- */
+  function poll() {
+    if (document.hidden) return;
+    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 4000) : null;
+
+    fetch("/api/info", {
+      cache: "no-store",
+      headers: { "Accept": "application/json" },
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (info) {
+        state.since = Date.now();
+        render(info);
+        markOffline(true);
+      })
+      .catch(function () { markOffline(false); })
+      .then(function () { if (timer) clearTimeout(timer); });
+  }
+
+  poll();
+  setInterval(poll, POLL_MS);
+  setInterval(tickUptime, 1000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
+})();
+</script>
+</body>
+</html>

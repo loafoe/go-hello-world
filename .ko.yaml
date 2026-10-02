@@ -1,3 +1,10 @@
 defaultPlatforms:
 - linux/arm64
 - linux/amd64
+# Stamp the release metadata into the binary so the UI can show it.
+defaultLdflags:
+- -s
+- -w
+- -X main.version={{.Git.Tag}}
+- -X main.revision={{.Git.ShortCommit}}
+- -X main.dirty={{.Git.IsDirty}}
