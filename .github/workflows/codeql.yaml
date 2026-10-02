@@ -32,8 +32,9 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          # Go does not support build-mode: none, so build it by hand.
-          build-mode: manual
+          # Go supports neither "none" nor "manual": it needs the tracer,
+          # which only autobuild wires up for us.
+          build-mode: autobuild
           queries: security-extended,security-and-quality
 
       - name: Set up Go
@@ -42,8 +43,8 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
-      - name: Build
-        run: go build ./...
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v4
