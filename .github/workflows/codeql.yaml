@@ -32,9 +32,18 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          # Go needs no build step: the extractor reads the source directly.
-          build-mode: none
+          # Go does not support build-mode: none, so build it by hand.
+          build-mode: manual
           queries: security-extended,security-and-quality
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build
+        run: go build ./...
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v4
